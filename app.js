@@ -436,11 +436,27 @@ function saveEvent(){
       kindColor:capture.status
     });
     closeSheet();
-    // refresh the open card
-    const card=stageCtx.cell.closest('.unit-card');
-    card.classList.remove('open'); card.querySelector('.stages').dataset.filled='';
-    card.querySelector('.stages').innerHTML='';
-    renderGrid();
+    // update just the tapped cell + the unit's summary — keep the card open
+    // so multiple stages can be changed in one pass
+    const cell=stageCtx.cell;
+    const val=capture.status||'none';
+    const note=stageNotes[key];
+    cell.className='stage '+val;
+    cell.innerHTML=`<span class="sdot"></span><span><span class="snm">${STAGES[si]}</span>${note&&note.text?`<span class="snote">▲ ${note.text}</span>`:''}</span>`;
+
+    const card=cell.closest('.unit-card');
+    const arr=state[f][r.id];
+    const done=arr.filter(s=>s==='done').length;
+    const pct=Math.round(done/STAGES.length*100);
+    const hasDefic=arr.some(s=>s==='defic');
+    card.querySelector('.unit-name').innerHTML=`${label} ${hasDefic?'<span style="color:var(--defic)">▲</span>':''}`;
+    const pctEl=card.querySelector('.pct');
+    pctEl.textContent=pct+'%';
+    pctEl.style.color=pct===100?'var(--done)':'var(--ink)';
+    const fillEl=card.querySelector('.prog-fill');
+    fillEl.style.width=pct+'%';
+    fillEl.style.background=hasDefic?'var(--defic)':'var(--done)';
+
     toast(capture.status==='defic'?'Deficiency saved to unit + log':'Status updated');
     return;
   }
