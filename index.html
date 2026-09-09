@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>401 Des Seigneurs</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <div class="topbar">
+    <button class="backbtn" id="backbtn" onclick="goBack()">‹</button>
+    <div class="brandmark">401</div>
+    <div class="brandtext">
+      <h1>Des Seigneurs</h1>
+      <p id="topsub">Finishing · Divco</p>
+    </div>
+    <div class="live">live</div>
+  </div>
+
+  <!-- ============ HOME ============ -->
+  <section class="view active" id="view-home">
+    <div class="home-scroll">
+      <div class="prompt" id="greeting">What's happening on site?</div>
+
+      <button class="capture-btn" onclick="openCapture()">
+        <span class="plus">+</span>
+        <span>
+          <span class="lbl">Quick capture</span>
+          <span class="sub">Walkthrough, a trade pulls you aside, anything to log</span>
+        </span>
+      </button>
+
+      <div class="tiles">
+        <button class="tile" onclick="go('progress')">
+          <span class="ico">▦</span>
+          <span class="tl">Progress</span>
+          <span class="meta"><b id="tile-done">—</b> units complete</span>
+        </button>
+        <button class="tile" onclick="openCapture('deficiency')">
+          <span class="ico">▲</span>
+          <span class="tl">Deficiencies</span>
+          <span class="meta"><b id="tile-defic">—</b> open</span>
+        </button>
+        <button class="tile" onclick="go('flags')">
+          <span class="ico">⚑</span>
+          <span class="tl">Flags</span>
+          <span class="meta"><b id="tile-flags">—</b> to follow up</span>
+        </button>
+        <button class="tile" onclick="openCapture('attendance')">
+          <span class="ico">☰</span>
+          <span class="tl">Attendance</span>
+          <span class="meta">Log today's crews</span>
+        </button>
+        <button class="tile wide" onclick="openCapture('delay')">
+          <span class="ico">◷</span>
+          <span class="tl">Log a delay</span>
+          <span class="meta">absorbed · contained · propagating</span>
+        </button>
+      </div>
+
+      <div class="section-label">
+        Today's log <span class="count" id="feed-count">0</span>
+      </div>
+    </div>
+    <div class="feed" id="feed">
+      <div class="empty-feed" id="feed-empty">
+        Nothing logged yet.<br>Tap <b style="color:var(--hivis)">Quick capture</b> the moment something happens — a deficiency, a delay, a trade showing you something in a unit.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PROGRESS ============ -->
+  <section class="view" id="view-progress">
+    <div class="grid-head">
+      <div class="floor-row" id="floor-row"></div>
+      <div class="legend">
+        <span><i style="background:var(--done)"></i>Complete</span>
+        <span><i style="background:var(--prog)"></i>In progress</span>
+        <span><i style="background:var(--none);opacity:.5"></i>Not started</span>
+        <span><i style="background:var(--defic)"></i>Deficiency</span>
+      </div>
+    </div>
+    <div class="grid-scroll" id="grid-scroll"></div>
+  </section>
+
+  <!-- ============ FLAGS ============ -->
+  <section class="view" id="view-flags">
+    <div class="home-scroll">
+      <div class="prompt">Flagged <span>· follow-ups & next meeting</span></div>
+    </div>
+    <div class="feed" id="flag-feed">
+      <div class="empty-feed" id="flag-empty">
+        Nothing flagged yet.<br>Flag anything — a deficiency, a delay, a question — and choose <b style="color:var(--hivis)">next meeting</b> or <b style="color:var(--hivis)">follow up</b>. It collects here.
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ============ NAV ============ -->
+<nav class="nav">
+  <button class="on" id="nav-home" onclick="go('home')"><span class="ni">⌂</span>Home</button>
+  <button id="nav-progress" onclick="go('progress')"><span class="ni">▦</span>Progress</button>
+  <button onclick="openCapture()"><span class="ni" style="color:var(--hivis)">⊕</span>Capture</button>
+  <button id="nav-flags" onclick="go('flags')"><span class="ni">⚑</span>Flags</button>
+</nav>
+
+<!-- ============ SHEET ============ -->
+<div class="scrim" id="scrim" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="grip"></div>
+  <div class="sheet-head">
+    <button class="sheet-close" onclick="closeSheet()">✕</button>
+    <h2 id="sheet-title">Quick capture</h2>
+    <div class="auto" id="sheet-auto"></div>
+  </div>
+  <div class="sheet-body" id="sheet-body"></div>
+  <div class="sheet-foot">
+    <button class="save-btn" id="save-btn" onclick="saveEvent()">Save</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

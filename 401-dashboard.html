@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>401 Des Seigneurs</title>
+<style>
+  /* ---------- Design tokens ----------
+     Subject: a field tool for a construction foreman. Language borrowed from
+     site signage + safety marking, not SaaS. Industrial dark surfaces, hi-vis
+     accent, and the four status colours Noah already uses on his sheet. */
+  :root{
+    --bg:#15171b;          /* deep charcoal, like a slate */
+    --surface:#1e2127;
+    --surface-2:#262a32;
+    --line:#343943;
+    --ink:#f2f4f7;
+    --ink-dim:#9aa2ad;
+    --ink-faint:#646c78;
+    --hivis:#ffd400;       /* hi-vis marking yellow (accent) */
+    --hivis-ink:#15171b;
+
+    /* status — matched to the legend on the master checklist */
+    --done:#1a9e57;        --done-cell:#12261c;
+    --prog:#f2c015;        --prog-cell:#2c2712;
+    --none:#c0392b;        --none-cell:#2a1614;
+    --defic:#e8791f;       --defic-cell:#2a1c10;
+    --empty:#20242b;
+
+    --r:14px;
+    --tap:56px;
+    font-size:16px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;}
+  body{
+    background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    overscroll-behavior:none;
+    -webkit-user-select:none;user-select:none;
+  }
+  #app{max-width:520px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;position:relative;}
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    display:flex;align-items:center;gap:12px;
+    padding:14px 16px calc(12px);
+    background:var(--surface);border-bottom:1px solid var(--line);
+    position:sticky;top:0;z-index:20;
+  }
+  .backbtn{
+    width:38px;height:38px;border-radius:9px;flex:none;border:1px solid var(--line);
+    background:var(--surface-2);color:var(--ink);font-size:22px;cursor:pointer;
+    display:none;place-items:center;font-family:inherit;line-height:1;padding:0;
+  }
+  .backbtn.show{display:grid;}
+  .backbtn:active{background:var(--line);}
+  .brandmark{
+    width:38px;height:38px;border-radius:9px;flex:none;
+    background:var(--hivis);color:var(--hivis-ink);
+    display:grid;place-items:center;font-weight:800;font-size:15px;letter-spacing:-.5px;
+    box-shadow:inset 0 0 0 2px rgba(0,0,0,.15);
+  }
+  .brandtext h1{font-size:16px;margin:0;font-weight:700;letter-spacing:-.2px;}
+  .brandtext p{font-size:12px;margin:2px 0 0;color:var(--ink-dim);}
+  .live{margin-left:auto;font-size:11px;color:var(--ink-faint);display:flex;align-items:center;gap:6px;}
+  .live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--done);box-shadow:0 0 0 3px rgba(26,158,87,.18);}
+
+  /* ---------- Views ---------- */
+  .view{flex:1;display:none;flex-direction:column;padding-bottom:90px;}
+  .view.active{display:flex;}
+
+  /* ---------- HOME: capture-first ---------- */
+  .home-scroll{padding:18px 16px 0;}
+  .prompt{font-size:19px;font-weight:650;letter-spacing:-.3px;margin:2px 0 16px;}
+  .prompt span{color:var(--ink-dim);font-weight:500;}
+
+  .capture-btn{
+    width:100%;border:none;border-radius:var(--r);cursor:pointer;
+    background:var(--hivis);color:var(--hivis-ink);
+    padding:20px;display:flex;align-items:center;gap:16px;text-align:left;
+    font-family:inherit;box-shadow:0 6px 20px rgba(255,212,0,.14);
+  }
+  .capture-btn:active{transform:translateY(1px);}
+  .capture-btn .plus{
+    width:44px;height:44px;border-radius:11px;flex:none;
+    background:rgba(0,0,0,.14);display:grid;place-items:center;font-size:30px;font-weight:300;line-height:1;
+  }
+  .capture-btn .lbl{display:block;font-size:18px;font-weight:750;letter-spacing:-.3px;}
+  .capture-btn .sub{display:block;font-size:13px;font-weight:500;opacity:.72;margin-top:2px;}
+
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;}
+  .tile{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+    padding:16px 15px;cursor:pointer;font-family:inherit;color:var(--ink);text-align:left;
+    display:flex;flex-direction:column;gap:10px;min-height:96px;
+  }
+  .tile:active{background:var(--surface-2);}
+  .tile .ico{font-size:22px;line-height:1;}
+  .tile .tl{font-size:15px;font-weight:650;letter-spacing:-.2px;}
+  .tile .meta{font-size:12px;color:var(--ink-dim);margin-top:auto;}
+  .tile .meta b{color:var(--hivis);font-weight:700;}
+  .tile.wide{grid-column:1 / -1;flex-direction:row;align-items:center;min-height:0;}
+  .tile.wide .ico{font-size:20px;}
+  .tile.wide .meta{margin:0 0 0 auto;}
+
+  .section-label{
+    font-size:12px;color:var(--ink-faint);margin:24px 4px 10px;font-weight:600;
+    display:flex;align-items:center;gap:8px;
+  }
+  .section-label .count{
+    background:var(--surface-2);color:var(--ink-dim);border-radius:20px;
+    padding:1px 8px;font-size:11px;
+  }
+
+  /* ---------- Activity feed (the shared spine, made visible) ---------- */
+  .feed{display:flex;flex-direction:column;gap:8px;padding:0 16px;}
+  .event{
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    padding:12px 13px;display:flex;gap:12px;align-items:flex-start;
+    animation:pop .28s ease;
+  }
+  @keyframes pop{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:none;}}
+  .event .dot{width:10px;height:10px;border-radius:50%;flex:none;margin-top:5px;}
+  .event .body{flex:1;min-width:0;}
+  .event .line1{font-size:14.5px;font-weight:600;letter-spacing:-.2px;}
+  .event .line2{font-size:12.5px;color:var(--ink-dim);margin-top:3px;line-height:1.35;}
+  .event .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .chip{font-size:11px;padding:3px 8px;border-radius:20px;background:var(--surface-2);color:var(--ink-dim);}
+  .chip.flag{background:rgba(255,212,0,.14);color:var(--hivis);}
+  .chip.loc{background:rgba(255,255,255,.06);color:var(--ink);}
+  .event .thumb{width:46px;height:46px;border-radius:9px;flex:none;background:var(--surface-2);
+    display:grid;place-items:center;font-size:20px;border:1px solid var(--line);}
+  .event .time{font-size:11px;color:var(--ink-faint);margin-top:6px;}
+  .empty-feed{color:var(--ink-faint);font-size:13px;text-align:center;padding:26px 20px;line-height:1.5;}
+
+  /* ---------- PROGRESS GRID ---------- */
+  .grid-head{padding:16px 16px 10px;position:sticky;top:0;background:var(--bg);z-index:5;}
+  .floor-row{display:flex;gap:8px;overflow-x:auto;padding:4px 0 6px;-ms-overflow-style:none;scrollbar-width:none;}
+  .floor-row::-webkit-scrollbar{display:none;}
+  .floor-chip{
+    flex:none;padding:9px 15px;border-radius:22px;border:1px solid var(--line);
+    background:var(--surface);color:var(--ink-dim);font-size:14px;font-weight:650;cursor:pointer;font-family:inherit;
+  }
+  .floor-chip.on{background:var(--hivis);color:var(--hivis-ink);border-color:var(--hivis);}
+  .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;}
+  .legend span{font-size:11.5px;color:var(--ink-dim);display:flex;align-items:center;gap:6px;}
+  .legend i{width:11px;height:11px;border-radius:3px;display:inline-block;}
+
+  .grid-scroll{flex:1;overflow:auto;padding:0 16px 20px;}
+  .unit-block{margin-top:14px;}
+  .unit-block h3{
+    font-size:12px;color:var(--ink-faint);font-weight:600;margin:0 0 8px;
+    position:sticky;left:0;
+  }
+  .unit-card{
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;
+    margin-bottom:10px;overflow:hidden;
+  }
+  .unit-top{
+    display:flex;align-items:center;gap:12px;padding:13px 14px;cursor:pointer;
+  }
+  .unit-top:active{background:var(--surface-2);}
+  .unit-name{font-size:16px;font-weight:700;letter-spacing:-.3px;}
+  .unit-sub{font-size:12px;color:var(--ink-faint);margin-top:1px;}
+  .unit-prog{margin-left:auto;text-align:right;}
+  .unit-prog .pct{font-size:15px;font-weight:750;}
+  .prog-track{width:66px;height:5px;border-radius:3px;background:var(--surface-2);margin-top:5px;overflow:hidden;}
+  .prog-fill{height:100%;background:var(--done);border-radius:3px;transition:width .3s;}
+  .chev{color:var(--ink-faint);font-size:20px;transition:transform .2s;}
+  .unit-card.open .chev{transform:rotate(90deg);}
+
+  .stages{display:none;border-top:1px solid var(--line);padding:6px;}
+  .unit-card.open .stages{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .stage{
+    border:1px solid var(--line);border-radius:9px;padding:10px 11px;cursor:pointer;
+    display:flex;align-items:center;gap:9px;min-height:var(--tap);background:var(--empty);
+  }
+  .stage:active{filter:brightness(1.2);}
+  .stage .sdot{width:12px;height:12px;border-radius:50%;flex:none;border:2px solid var(--ink-faint);}
+  .stage .snm{font-size:12.5px;font-weight:550;line-height:1.2;}
+  .stage .snote{font-size:10.5px;color:var(--defic);margin-top:2px;font-weight:600;}
+  .stage.done{background:var(--done-cell);}   .stage.done .sdot{background:var(--done);border-color:var(--done);}
+  .stage.prog{background:var(--prog-cell);}   .stage.prog .sdot{background:var(--prog);border-color:var(--prog);}
+  .stage.none{background:var(--none-cell);}   .stage.none .sdot{background:transparent;border-color:var(--none);}
+  .stage.defic{background:var(--defic-cell);border-color:var(--defic);} .stage.defic .sdot{background:var(--defic);border-color:var(--defic);}
+
+  /* ---------- Bottom nav ---------- */
+  .nav{
+    position:fixed;bottom:0;left:0;right:0;max-width:520px;margin:0 auto;
+    background:var(--surface);border-top:1px solid var(--line);
+    display:flex;padding:8px 8px calc(8px + env(safe-area-inset-bottom,0));z-index:20;
+  }
+  .nav button{
+    flex:1;background:none;border:none;color:var(--ink-faint);font-family:inherit;cursor:pointer;
+    padding:6px 0;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;font-weight:600;
+  }
+  .nav button .ni{font-size:21px;line-height:1;}
+  .nav button.on{color:var(--hivis);}
+
+  /* ---------- Sheet (modal) ---------- */
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:30;opacity:0;pointer-events:none;transition:opacity .2s;}
+  .scrim.show{opacity:1;pointer-events:auto;}
+  .sheet{
+    position:fixed;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;z-index:40;
+    background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--line);
+    transform:translateY(100%);transition:transform .28s cubic-bezier(.32,.72,0,1);
+    max-height:92vh;display:flex;flex-direction:column;
+    padding-bottom:env(safe-area-inset-bottom,0);
+  }
+  .sheet.show{transform:none;}
+  .grip{width:38px;height:4px;border-radius:2px;background:var(--line);margin:10px auto 4px;}
+  .sheet-head{padding:6px 20px 14px;border-bottom:1px solid var(--line);position:relative;}
+  .sheet-close{position:absolute;top:2px;right:14px;width:36px;height:36px;border-radius:9px;
+    border:1px solid var(--line);background:var(--surface-2);color:var(--ink);font-size:18px;
+    cursor:pointer;display:grid;place-items:center;font-family:inherit;line-height:1;}
+  .sheet-close:active{background:var(--line);}
+  .sheet-head h2{margin:0;font-size:19px;letter-spacing:-.3px;}
+  .sheet-head .auto{font-size:12.5px;color:var(--ink-dim);margin-top:5px;display:flex;align-items:center;gap:7px;}
+  .sheet-head .auto b{color:var(--ink);font-weight:650;}
+  .sheet-body{padding:16px 20px 20px;overflow-y:auto;}
+  .field{margin-bottom:18px;}
+  .field > label{display:block;font-size:12px;color:var(--ink-dim);font-weight:600;margin-bottom:8px;}
+  .opt-row{display:flex;flex-wrap:wrap;gap:8px;}
+  .opt{
+    padding:11px 14px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2);
+    color:var(--ink);font-size:13.5px;font-weight:600;cursor:pointer;font-family:inherit;
+  }
+  .opt.on{background:var(--hivis);color:var(--hivis-ink);border-color:var(--hivis);}
+  .opt.on.status-done{background:var(--done);border-color:var(--done);color:#fff;}
+  .opt.on.status-prog{background:var(--prog);border-color:var(--prog);color:#1a1a1a;}
+  .opt.on.status-none{background:var(--none);border-color:var(--none);color:#fff;}
+  .opt.on.status-defic{background:var(--defic);border-color:var(--defic);color:#fff;}
+  select.opt-select,textarea,input[type=text]{
+    width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;
+    color:var(--ink);font-family:inherit;font-size:15px;padding:13px;
+  }
+  textarea{min-height:78px;resize:none;}
+  .photo-row{display:flex;gap:10px;flex-wrap:wrap;}
+  .add-photo{
+    width:70px;height:70px;border-radius:11px;border:1.5px dashed var(--line);background:var(--surface-2);
+    display:grid;place-items:center;cursor:pointer;color:var(--ink-faint);font-size:24px;
+  }
+  .add-photo:active{border-color:var(--hivis);color:var(--hivis);}
+  .photo-thumb{width:70px;height:70px;border-radius:11px;background:var(--surface-2);
+    display:grid;place-items:center;font-size:26px;border:1px solid var(--line);position:relative;}
+  .photo-thumb small{position:absolute;bottom:3px;font-size:9px;color:var(--ink-faint);}
+  .flag-toggle{
+    display:flex;align-items:center;gap:12px;padding:14px;border-radius:11px;
+    background:var(--surface-2);border:1px solid var(--line);cursor:pointer;
+  }
+  .flag-toggle.on{background:rgba(255,212,0,.1);border-color:var(--hivis);}
+  .flag-toggle .fico{font-size:20px;}
+  .flag-toggle .ft{flex:1;}
+  .flag-toggle .ft b{font-size:14px;font-weight:650;display:block;}
+  .flag-toggle .ft small{font-size:11.5px;color:var(--ink-dim);}
+  .switch{width:46px;height:28px;border-radius:16px;background:var(--line);flex:none;position:relative;transition:background .2s;}
+  .flag-toggle.on .switch{background:var(--hivis);}
+  .switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;transition:transform .2s;}
+  .flag-toggle.on .switch::after{transform:translateX(18px);}
+  .flag-sub{margin-top:10px;display:none;}
+  .flag-toggle.on ~ .flag-sub{display:block;}
+
+  .sheet-foot{padding:14px 20px calc(18px + env(safe-area-inset-bottom,0));border-top:1px solid var(--line);}
+  .save-btn{
+    width:100%;padding:17px;border:none;border-radius:13px;background:var(--hivis);color:var(--hivis-ink);
+    font-family:inherit;font-size:16px;font-weight:750;cursor:pointer;letter-spacing:-.2px;
+  }
+  .save-btn:active{transform:translateY(1px);}
+  .save-btn.grey{background:var(--surface-2);color:var(--ink-dim);}
+
+  /* status quick-cycle popover on grid cell */
+  .cycle-hint{font-size:11px;color:var(--ink-faint);text-align:center;padding:2px 0 10px;}
+
+  /* email draft */
+  .email-draft{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+  .email-line{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;gap:10px;font-size:14px;}
+  .email-line .k{color:var(--ink-faint);font-size:12px;width:56px;flex:none;padding-top:1px;}
+  .email-line .v{color:var(--ink);flex:1;word-break:break-word;}
+  .email-line .v.subj{font-weight:650;letter-spacing:-.2px;}
+  .email-line.body{flex-direction:column;gap:6px;min-height:80px;}
+  .email-line.body .v{white-space:pre-wrap;line-height:1.5;}
+  .email-att{display:flex;gap:8px;padding:12px 14px;flex-wrap:wrap;}
+  .email-att .pa{width:52px;height:52px;border-radius:8px;background:var(--bg);border:1px solid var(--line);
+    display:grid;place-items:center;font-size:22px;}
+  .email-note{font-size:12px;color:var(--ink-dim);margin-top:14px;line-height:1.5;text-align:center;}
+  .email-actions{display:flex;gap:10px;margin-top:16px;}
+  .email-actions button{flex:1;padding:15px;border-radius:12px;border:none;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;}
+  .email-actions .primary{background:var(--hivis);color:var(--hivis-ink);}
+  .email-actions .ghost{background:var(--surface-2);color:var(--ink-dim);border:1px solid var(--line);}
+
+  /* action row on saved-event toast path */
+  .postsave{display:flex;gap:10px;margin-top:16px;}
+  .postsave button{flex:1;padding:14px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);
+    color:var(--ink);font-family:inherit;font-size:14px;font-weight:650;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;}
+  .postsave button.mail{background:rgba(255,212,0,.12);border-color:var(--hivis);color:var(--hivis);}
+
+  /* email button on feed events */
+  .event .mailbtn{background:var(--surface-2);border:1px solid var(--line);color:var(--ink-dim);
+    border-radius:8px;width:38px;height:38px;font-size:17px;cursor:pointer;flex:none;display:grid;place-items:center;}
+  .event .mailbtn:active{background:var(--line);color:var(--hivis);}
+
+  .toast{
+    position:fixed;bottom:104px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--done);color:#fff;padding:12px 20px;border-radius:24px;font-size:13.5px;font-weight:650;
+    z-index:60;opacity:0;transition:all .3s;white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,.3);
+    display:flex;align-items:center;gap:8px;max-width:90vw;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="topbar">
+    <button class="backbtn" id="backbtn" onclick="goBack()">‹</button>
+    <div class="brandmark">401</div>
+    <div class="brandtext">
+      <h1>Des Seigneurs</h1>
+      <p id="topsub">Finishing · Divco</p>
+    </div>
+    <div class="live">live</div>
+  </div>
+
+  <!-- ============ HOME ============ -->
+  <section class="view active" id="view-home">
+    <div class="home-scroll">
+      <div class="prompt" id="greeting">What's happening on site?</div>
+
+      <button class="capture-btn" onclick="openCapture()">
+        <span class="plus">+</span>
+        <span>
+          <span class="lbl">Quick capture</span>
+          <span class="sub">Walkthrough, a trade pulls you aside, anything to log</span>
+        </span>
+      </button>
+
+      <div class="tiles">
+        <button class="tile" onclick="go('progress')">
+          <span class="ico">▦</span>
+          <span class="tl">Progress</span>
+          <span class="meta"><b id="tile-done">—</b> units complete</span>
+        </button>
+        <button class="tile" onclick="openCapture('deficiency')">
+          <span class="ico">▲</span>
+          <span class="tl">Deficiencies</span>
+          <span class="meta"><b id="tile-defic">—</b> open</span>
+        </button>
+        <button class="tile" onclick="go('flags')">
+          <span class="ico">⚑</span>
+          <span class="tl">Flags</span>
+          <span class="meta"><b id="tile-flags">—</b> to follow up</span>
+        </button>
+        <button class="tile" onclick="openCapture('attendance')">
+          <span class="ico">☰</span>
+          <span class="tl">Attendance</span>
+          <span class="meta">Log today's crews</span>
+        </button>
+        <button class="tile wide" onclick="openCapture('delay')">
+          <span class="ico">◷</span>
+          <span class="tl">Log a delay</span>
+          <span class="meta">absorbed · contained · propagating</span>
+        </button>
+      </div>
+
+      <div class="section-label">
+        Today's log <span class="count" id="feed-count">0</span>
+      </div>
+    </div>
+    <div class="feed" id="feed">
+      <div class="empty-feed" id="feed-empty">
+        Nothing logged yet.<br>Tap <b style="color:var(--hivis)">Quick capture</b> the moment something happens — a deficiency, a delay, a trade showing you something in a unit.
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PROGRESS ============ -->
+  <section class="view" id="view-progress">
+    <div class="grid-head">
+      <div class="floor-row" id="floor-row"></div>
+      <div class="legend">
+        <span><i style="background:var(--done)"></i>Complete</span>
+        <span><i style="background:var(--prog)"></i>In progress</span>
+        <span><i style="background:var(--none);opacity:.5"></i>Not started</span>
+        <span><i style="background:var(--defic)"></i>Deficiency</span>
+      </div>
+    </div>
+    <div class="grid-scroll" id="grid-scroll"></div>
+  </section>
+
+  <!-- ============ FLAGS ============ -->
+  <section class="view" id="view-flags">
+    <div class="home-scroll">
+      <div class="prompt">Flagged <span>· follow-ups & next meeting</span></div>
+    </div>
+    <div class="feed" id="flag-feed">
+      <div class="empty-feed" id="flag-empty">
+        Nothing flagged yet.<br>Flag anything — a deficiency, a delay, a question — and choose <b style="color:var(--hivis)">next meeting</b> or <b style="color:var(--hivis)">follow up</b>. It collects here.
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- ============ NAV ============ -->
+<nav class="nav">
+  <button class="on" id="nav-home" onclick="go('home')"><span class="ni">⌂</span>Home</button>
+  <button id="nav-progress" onclick="go('progress')"><span class="ni">▦</span>Progress</button>
+  <button onclick="openCapture()"><span class="ni" style="color:var(--hivis)">⊕</span>Capture</button>
+  <button id="nav-flags" onclick="go('flags')"><span class="ni">⚑</span>Flags</button>
+</nav>
+
+<!-- ============ SHEET ============ -->
+<div class="scrim" id="scrim" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="grip"></div>
+  <div class="sheet-head">
+    <button class="sheet-close" onclick="closeSheet()">✕</button>
+    <h2 id="sheet-title">Quick capture</h2>
+    <div class="auto" id="sheet-auto"></div>
+  </div>
+  <div class="sheet-body" id="sheet-body"></div>
+  <div class="sheet-foot">
+    <button class="save-btn" id="save-btn" onclick="saveEvent()">Save</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================================
+   401 DES SEIGNEURS — prototype
+   One shared "event" model underneath every surface. A deficiency on a
+   grid cell and a "come to 403" capture are the SAME object, different
+   fields. Nothing persists between sessions yet — this is to feel the loop.
+   ===================================================================== */
+
+// ---- Real 401 structure, from the plans + master checklist ----
+const STAGES = [
+  "Cadres/Portes/Plinthes","Peinture Apprêt","Céramique","Coulis","Planchers",
+  "Cabinets & Vanités","Comptoirs","Fin. Plomberie","Fin. Élec.","Calfeutrage",
+  "Escaliers","Quincaillerie int.","Nettoyage","Peinture Finale","Finition MEP",
+  "Corrections & Électro","Nettoyage 2","Stores","Quinc. Balcon/Fen","Seuille Gran.",
+  "ID quinc. Porte","Trim strip LED","Éclairage vérif.","Dropsill",
+  "Plaf./Trap d'accès","Balcon Garde-corps","Séparateur balcon","Prise Balcon"
+];
+
+// unit types + areas pulled from the architectural sheets
+const FLOORS = {
+  "RDC":{units:[
+      ["121","3½",null,"seed-hi"],["120","M1"],["119","M1"],["118","M1"],["117","M1"],
+      ["116","M1"],["115","M1"],["114","M1"],["113","M1"],["112","M1"],["111","M1"],
+      ["110","M1"],["109","M1"],["103","M1"],["127","M1"],["126","M1"],["125","M1"],
+      ["124","M1"],["123","M1"],["102","M1"]
+    ],
+    common:["Bike Room (104)","Sprinkler (107)","Employee Office","Commercial (122)",
+      "Mailroom","Elec. Shaft","Garbage Chute","Courtyard Access"]},
+  "2e":{units:[
+      ["221","5½ M1"],["220","5½ M1"],["219","5½ M1"],["218","5½ M1"],["217","5½ M1"],
+      ["216","5½ M1"],["215","5½ M1"],["214","5½ M3"],["213","5½ M4"],["212","5½ M1"],
+      ["211","5½ M1"],["210","5½ M1"],["209","5½ M1"],["208","3½ A13"],["207","3½ A11"],
+      ["205","4½ B1"],["203","5½ M1"],["202","5½ M1"]
+    ],
+    common:["Gym (2-G)","Lobby 2e","Telecom (2-SE)","Garbage Chute (2-CD)","Pods (2-WO)"]},
+  "3e":{units:[["309","A9"],["308","A10"],["307","A11"],["306","A12"],["305","A3"],
+      ["304","S2"],["303","A4"],["302","A1"]],common:["Corridor 3e","Elec. Shaft"]},
+  "4e":{units:[["409","A9"],["408","A10"],["407","A11"],["406","A12"],["405","A3"],
+      ["404","S2"],["403","A4"],["402","A1"]],common:["Corridor 4e","Elec. Shaft"]},
+  "5e":{units:[["509","A9"],["508","A10"],["507","A11"],["506","A12"],["505","A3"],
+      ["504","S2"],["503","A4"],["502","A1"]],common:["Corridor 5e","Elec. Shaft"]},
+  "6e":{units:[["622","B7"],["621","B8"],["623","C2"],["620","A1"],["624","A5"],
+      ["619","A9"],["625","A10"],["618","A11"],["626","A12"],["617","A3"],
+      ["616","S2"],["615","A4"],["614","A1"]],common:["Corridor 6e","Elec. Shaft"]},
+  "7e":{units:[["709","B7"],["707","B8"],["704","C2"],["702","A1"],["701","A5"]],
+    common:["Corridor 7e","Terrasse 7e"]},
+  "8e":{units:[["809","B7"],["807","B8"],["804","C2"],["802","A1"],["801","A5"]],
+    common:["Corridor 8e"]},
+  "9e":{units:[["909","B7"],["907","B8"],["904","C2"],["902","A1"],["901","A5"]],
+    common:["Corridor 9e"]}
+};
+
+// ---- State ----
+let state = {};          // state[floor][unitId][stageIndex] = 'done'|'prog'|'none'|'defic'
+let stageNotes = {};     // stageNotes["6e/622/6"] = {text, photos, flag}
+let events = [];         // shared spine: every capture + status change
+let currentFloor = "6e";
+let capture = {};        // in-progress capture form
+
+// seed some realistic progress so it doesn't open empty
+function seed(){
+  for(const f in FLOORS){
+    state[f]={};
+    const list=[...FLOORS[f].units.map(u=>u[0]), ...FLOORS[f].common];
+    list.forEach((id,idx)=>{
+      state[f][id]=STAGES.map((_,si)=>{
+        // higher floors + later = less done; RDC/2e mostly done
+        const base = (f==="RDC"||f==="2e") ? 0.82 : (f==="6e"?0.6:0.7);
+        const r=Math.random();
+        if(r < base - si*0.018) return 'done';
+        if(r < base - si*0.018 + 0.12) return 'prog';
+        return 'none';
+      });
+    });
+  }
+  // a couple of real deficiencies from the sheet
+  setStage("6e","622",6,'defic',{text:"Backsplash — bathroom (BS) missing",photos:1,flag:false});
+  setStage("2e","221",6,'defic',{text:"Backsplash bathroom missing",photos:0,flag:true,flagType:"Next meeting"});
+  setStage("6e","626",7,'prog');
+}
+function setStage(f,u,si,val,note){
+  if(!state[f]) state[f]={};
+  if(!state[f][u]) state[f][u]=STAGES.map(()=> 'none');
+  state[f][u][si]=val;
+  if(note) stageNotes[`${f}/${u}/${si}`]=note;
+}
+
+// ---- Navigation ----
+let currentView='home';
+function go(v){
+  currentView=v;
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('on'));
+  const nb=document.getElementById('nav-'+v); if(nb) nb.classList.add('on');
+  if(v==='progress') renderGrid();
+  if(v==='flags') renderFlags();
+  if(v==='home') renderHome();
+  // back button shows on every screen except home
+  document.getElementById('backbtn').classList.toggle('show', v!=='home');
+  window.scrollTo(0,0);
+}
+function goBack(){
+  // if a sheet is open, close that first
+  if(document.getElementById('sheet').classList.contains('show')){ closeSheet(); return; }
+  go('home');
+}
+
+// ---- HOME render ----
+function renderHome(){
+  // stats
+  let doneUnits=0,total=0,defic=0,flags=0;
+  for(const f in state){
+    for(const u in state[f]){
+      const arr=state[f][u];
+      if(arr.every(s=>s==='done')) doneUnits++;
+      total++;
+      defic+=arr.filter(s=>s==='defic').length;
+    }
+  }
+  events.forEach(e=>{if(e.flag) flags++;});
+  document.getElementById('tile-done').textContent=doneUnits;
+  document.getElementById('tile-defic').textContent=defic;
+  document.getElementById('tile-flags').textContent=flags;
+
+  const feed=document.getElementById('feed');
+  const todays=events.filter(e=>e.today);
+  document.getElementById('feed-count').textContent=todays.length;
+  if(todays.length===0){
+    document.getElementById('feed-empty').style.display='';
+    [...feed.querySelectorAll('.event')].forEach(n=>n.remove());
+    return;
+  }
+  document.getElementById('feed-empty').style.display='none';
+  [...feed.querySelectorAll('.event')].forEach(n=>n.remove());
+  todays.slice().reverse().forEach(e=> feed.appendChild(eventNode(e)));
+}
+
+function eventNode(e){
+  const n=document.createElement('div');n.className='event';
+  const colors={done:'var(--done)',prog:'var(--prog)',none:'var(--none)',defic:'var(--defic)',event:'var(--hivis)'};
+  n.innerHTML=`
+    <div class="dot" style="background:${colors[e.kindColor]||'var(--hivis)'}"></div>
+    <div class="body">
+      <div class="line1">${e.title}</div>
+      ${e.note?`<div class="line2">${e.note}</div>`:''}
+      <div class="tags">
+        ${e.loc?`<span class="chip loc">📍 ${e.loc}</span>`:''}
+        ${e.who?`<span class="chip">${e.who}</span>`:''}
+        ${e.flag?`<span class="chip flag">⚑ ${e.flagType||'Flagged'}</span>`:''}
+      </div>
+      <div class="time">${e.time}</div>
+    </div>
+    <button class="mailbtn" title="Email this">✉</button>`;
+  n.querySelector('.mailbtn').onclick=(ev)=>{ev.stopPropagation();openEmailDraft(e);};
+  return n;
+}
+
+// ---- PROGRESS GRID render ----
+function renderGrid(){
+  const fr=document.getElementById('floor-row');
+  fr.innerHTML='';
+  Object.keys(FLOORS).forEach(f=>{
+    const c=document.createElement('button');
+    c.className='floor-chip'+(f===currentFloor?' on':'');
+    c.textContent=f; c.onclick=()=>{currentFloor=f;renderGrid();};
+    fr.appendChild(c);
+  });
+  const gs=document.getElementById('grid-scroll');
+  gs.innerHTML='';
+  const fdata=FLOORS[currentFloor];
+  const block=document.createElement('div');block.className='unit-block';
+
+  const rows=[
+    ...fdata.units.map(u=>({id:u[0],type:u[1],common:false})),
+    ...fdata.common.map(c=>({id:c,type:'Common area',common:true}))
+  ];
+  rows.forEach(r=> block.appendChild(unitCard(currentFloor,r)));
+  gs.appendChild(block);
+}
+
+function unitCard(f,r){
+  const arr=state[f][r.id]||STAGES.map(()=>'none');
+  const done=arr.filter(s=>s==='done').length;
+  const pct=Math.round(done/STAGES.length*100);
+  const hasDefic=arr.some(s=>s==='defic');
+
+  const card=document.createElement('div');card.className='unit-card';
+  const label = r.common ? r.id : ('Unité '+r.id);
+  card.innerHTML=`
+    <div class="unit-top">
+      <div>
+        <div class="unit-name">${label} ${hasDefic?'<span style="color:var(--defic)">▲</span>':''}</div>
+        <div class="unit-sub">${r.type}</div>
+      </div>
+      <div class="unit-prog">
+        <div class="pct" style="color:${pct===100?'var(--done)':'var(--ink)'}">${pct}%</div>
+        <div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:${hasDefic?'var(--defic)':'var(--done)'}"></div></div>
+      </div>
+      <span class="chev">›</span>
+    </div>
+    <div class="stages"></div>`;
+  card.querySelector('.unit-top').onclick=()=>{
+    card.classList.toggle('open');
+    if(card.classList.contains('open')) fillStages(card,f,r);
+  };
+  return card;
+}
+
+function fillStages(card,f,r){
+  const wrap=card.querySelector('.stages');
+  if(wrap.dataset.filled) return;
+  wrap.dataset.filled="1";
+  STAGES.forEach((nm,si)=>{
+    const val=state[f][r.id][si];
+    const note=stageNotes[`${f}/${r.id}/${si}`];
+    const cell=document.createElement('div');
+    cell.className='stage '+val;
+    cell.innerHTML=`<span class="sdot"></span><span><span class="snm">${nm}</span>${note&&note.text?`<span class="snote">▲ ${note.text}</span>`:''}</span>`;
+    cell.onclick=()=> openStageSheet(f,r,si,cell);
+    wrap.appendChild(cell);
+  });
+}
+
+// ---- FLAGS render ----
+function renderFlags(){
+  const ff=document.getElementById('flag-feed');
+  [...ff.querySelectorAll('.event')].forEach(n=>n.remove());
+  const flagged=events.filter(e=>e.flag);
+  document.getElementById('flag-empty').style.display= flagged.length?'none':'';
+  flagged.slice().reverse().forEach(e=> ff.appendChild(eventNode(e)));
+}
+
+/* ===================== SHEET / CAPTURE ===================== */
+let sheetMode='capture';
+let stageCtx=null;
+
+function nowStr(){
+  const d=new Date();
+  let h=d.getHours(),m=d.getMinutes();const ap=h>=12?'PM':'AM';h=h%12||12;
+  return `${h}:${String(m).padStart(2,'0')} ${ap}`;
+}
+function today(){return new Date().toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});}
+
+const CAP_PRESETS={
+  capture:   {title:"Quick capture", color:'event'},
+  deficiency:{title:"Log a deficiency", color:'defic'},
+  attendance:{title:"Attendance", color:'event'},
+  delay:     {title:"Log a delay", color:'prog'}
+};
+
+function openCapture(mode='capture'){
+  sheetMode=mode; stageCtx=null;
+  capture={loc:'',who:'',note:'',photos:0,flag:false,flagType:'Next meeting',status:null,severity:null,trades:{}};
+  const p=CAP_PRESETS[mode];
+  document.getElementById('sheet-title').textContent=p.title;
+  document.getElementById('sheet-auto').innerHTML=`⏱ auto-stamped <b>${today()} · ${nowStr()}</b>`;
+  document.getElementById('sheet-body').innerHTML=buildCaptureBody(mode);
+  document.getElementById('save-btn').textContent = mode==='attendance'?'Save attendance':'Save to log';
+  wireCaptureBody(mode);
+  showSheet();
+}
+
+function allLocations(){
+  const out=[];
+  for(const f in FLOORS){
+    FLOORS[f].units.forEach(u=>out.push(`${f} · Unité ${u[0]}`));
+    FLOORS[f].common.forEach(c=>out.push(`${f} · ${c}`));
+  }
+  return out;
+}
+const TRADES=["Peintre","Électricien","Plombier","Gicleurs (sprinkler)","CVAC (HVAC)","Céramiste","Ébéniste","Planchers","Général"];
+
+function buildCaptureBody(mode){
+  if(mode==='attendance'){
+    return `<div class="field"><label>Crews on site today — tap to set headcount</label>
+      <div id="att-list"></div></div>`;
+  }
+  let html='';
+  // location
+  html+=`<div class="field"><label>Where</label>
+    <select class="opt-select" id="cap-loc">
+      <option value="">Select unit or area…</option>
+      ${allLocations().map(l=>`<option>${l}</option>`).join('')}
+    </select></div>`;
+  // who (not for delay)
+  html+=`<div class="field"><label>Who's with you</label>
+    <div class="opt-row" id="cap-who">
+      ${TRADES.map(t=>`<button class="opt" data-who="${t}">${t}</button>`).join('')}
+    </div></div>`;
+  // delay severity
+  if(mode==='delay'){
+    html+=`<div class="field"><label>Impact — this decides what the app does with it</label>
+      <div class="opt-row" id="cap-sev">
+        <button class="opt" data-sev="Absorbed">Absorbed<br><small style="font-weight:400;opacity:.7">extra hours, no schedule hit — logs to cost trail</small></button>
+        <button class="opt" data-sev="Contained">Contained<br><small style="font-weight:400;opacity:.7">one unit, worked around</small></button>
+        <button class="opt" data-sev="Propagating">Propagating<br><small style="font-weight:400;opacity:.7">downstream trades need to know</small></button>
+      </div></div>`;
+  }
+  // notes
+  html+=`<div class="field"><label>${mode==='delay'?'What happened & why':'Notes'}</label>
+    <textarea id="cap-note" placeholder="${mode==='deficiency'?'e.g. Backsplash bathroom missing':'Type or dictate what this is…'}"></textarea></div>`;
+  // photos
+  html+=`<div class="field"><label>Photos</label>
+    <div class="photo-row" id="cap-photos">
+      <div class="add-photo" onclick="addPhoto()">＋</div>
+    </div></div>`;
+  // flag
+  html+=`<div class="field">
+    <div class="flag-toggle" id="cap-flag" onclick="toggleFlag()">
+      <span class="fico">⚑</span>
+      <span class="ft"><b>Flag this</b><small>collect it for later — nothing gets buried</small></span>
+      <span class="switch"></span>
+    </div>
+    <div class="flag-sub">
+      <div class="opt-row" id="cap-flagtype">
+        <button class="opt on" data-ft="Next meeting">Next meeting</button>
+        <button class="opt" data-ft="Follow up">Follow up</button>
+        <button class="opt" data-ft="Waiting on architect">Waiting on architect</button>
+        <button class="opt" data-ft="Back-charge">Back-charge</button>
+      </div>
+    </div></div>`;
+  return html;
+}
+
+function wireCaptureBody(mode){
+  if(mode==='attendance'){
+    const list=document.getElementById('att-list');
+    list.innerHTML=TRADES.map(t=>`
+      <div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)">
+        <span style="flex:1;font-size:15px;font-weight:600">${t}</span>
+        <button class="opt" style="width:44px;text-align:center" onclick="attStep('${t}',-1,this)">–</button>
+        <span id="att-${t}" style="min-width:26px;text-align:center;font-size:17px;font-weight:750">0</span>
+        <button class="opt" style="width:44px;text-align:center" onclick="attStep('${t}',1,this)">+</button>
+      </div>`).join('');
+    return;
+  }
+  const loc=document.getElementById('cap-loc');
+  if(loc) loc.onchange=e=>capture.loc=e.target.value;
+  document.querySelectorAll('#cap-who .opt').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#cap-who .opt').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');capture.who=b.dataset.who;
+  });
+  document.querySelectorAll('#cap-sev .opt').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#cap-sev .opt').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');capture.severity=b.dataset.sev;
+  });
+  const nt=document.getElementById('cap-note');
+  if(nt) nt.oninput=e=>capture.note=e.target.value;
+  document.querySelectorAll('#cap-flagtype .opt').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#cap-flagtype .opt').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');capture.flagType=b.dataset.ft;
+  });
+}
+
+function attStep(t,d,btn){
+  capture.trades[t]=Math.max(0,(capture.trades[t]||0)+d);
+  document.getElementById('att-'+t).textContent=capture.trades[t];
+}
+function addPhoto(){
+  capture.photos++;
+  const row=document.getElementById('cap-photos');
+  const t=document.createElement('div');t.className='photo-thumb';
+  t.innerHTML='📷<small>photo '+capture.photos+'</small>';
+  row.insertBefore(t,row.firstChild);
+}
+function toggleFlag(){
+  const el=document.getElementById('cap-flag');
+  el.classList.toggle('on');capture.flag=el.classList.contains('on');
+}
+
+/* ---- Stage cell sheet (from the grid) ---- */
+function openStageSheet(f,r,si,cell){
+  sheetMode='stage';
+  stageCtx={f,r,si,cell};
+  const key=`${f}/${r.id}/${si}`;
+  const existing=stageNotes[key]||{};
+  capture={note:existing.text||'',photos:existing.photos||0,flag:existing.flag||false,
+           flagType:existing.flagType||'Next meeting',status:state[f][r.id][si]};
+  const label = r.common?r.id:('Unité '+r.id);
+  document.getElementById('sheet-title').textContent=`${label} · ${STAGES[si]}`;
+  document.getElementById('sheet-auto').innerHTML=`Set status — tap to change`;
+  document.getElementById('sheet-body').innerHTML=`
+    <div class="field"><label>Status</label>
+      <div class="opt-row" id="st-status">
+        <button class="opt status-done ${capture.status==='done'?'on':''}" data-st="done">🟢 Complete</button>
+        <button class="opt status-prog ${capture.status==='prog'?'on':''}" data-st="prog">🟡 In progress</button>
+        <button class="opt status-none ${capture.status==='none'?'on':''}" data-st="none">🔴 Not started</button>
+        <button class="opt status-defic ${capture.status==='defic'?'on':''}" data-st="defic">🟠 Deficiency</button>
+      </div></div>
+    <div id="defic-extra" style="display:${capture.status==='defic'?'block':'none'}">
+      <div class="field"><label>What's the deficiency / note</label>
+        <textarea id="cap-note" placeholder="e.g. Backsplash bathroom missing">${capture.note}</textarea></div>
+      <div class="field"><label>Photos</label>
+        <div class="photo-row" id="cap-photos"><div class="add-photo" onclick="addPhoto()">＋</div></div></div>
+      <div class="field">
+        <div class="flag-toggle ${capture.flag?'on':''}" id="cap-flag" onclick="toggleFlag()">
+          <span class="fico">⚑</span><span class="ft"><b>Flag this</b><small>collect it for later</small></span>
+          <span class="switch"></span></div>
+        <div class="flag-sub">
+          <div class="opt-row" id="cap-flagtype">
+            <button class="opt ${capture.flagType==='Next meeting'?'on':''}" data-ft="Next meeting">Next meeting</button>
+            <button class="opt ${capture.flagType==='Back-charge'?'on':''}" data-ft="Back-charge">Back-charge</button>
+            <button class="opt ${capture.flagType==='Waiting on architect'?'on':''}" data-ft="Waiting on architect">Waiting on architect</button>
+          </div></div></div>
+    </div>`;
+  // wire
+  document.querySelectorAll('#st-status .opt').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#st-status .opt').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');capture.status=b.dataset.st;
+    document.getElementById('defic-extra').style.display = b.dataset.st==='defic'?'block':'none';
+  });
+  const nt=document.getElementById('cap-note'); if(nt) nt.oninput=e=>capture.note=e.target.value;
+  document.querySelectorAll('#cap-flagtype .opt').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('#cap-flagtype .opt').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');capture.flagType=b.dataset.ft;});
+  document.getElementById('save-btn').textContent='Save';
+  showSheet();
+}
+
+/* ---- Save (writes to the shared spine) ---- */
+function saveEvent(){
+  if(sheetMode==='stage'){
+    const {f,r,si}=stageCtx;
+    const key=`${f}/${r.id}/${si}`;
+    state[f][r.id][si]=capture.status||'none';
+    if(capture.status==='defic'||capture.note||capture.flag){
+      stageNotes[key]={text:capture.note,photos:capture.photos,flag:capture.flag,flagType:capture.flagType};
+    } else { delete stageNotes[key]; }
+    // log to spine
+    const label=r.common?r.id:('Unité '+r.id);
+    const statusWord={done:'marked complete',prog:'in progress',none:'reset',defic:'DEFICIENCY'}[capture.status];
+    events.push({
+      title:`${label} · ${STAGES[si]} — ${statusWord}`,
+      note:capture.note||'', loc:`${f} · ${label}`, who:'', time:nowStr(), today:true,
+      photos:capture.photos||0, flag:capture.flag, flagType:capture.flagType,
+      kindColor:capture.status
+    });
+    closeSheet();
+    // refresh the open card
+    const card=stageCtx.cell.closest('.unit-card');
+    card.classList.remove('open'); card.querySelector('.stages').dataset.filled='';
+    card.querySelector('.stages').innerHTML='';
+    renderGrid();
+    toast(capture.status==='defic'?'Deficiency saved to unit + log':'Status updated');
+    return;
+  }
+
+  // capture / deficiency / delay / attendance
+  if(sheetMode==='attendance'){
+    const crews=Object.entries(capture.trades).filter(([_,n])=>n>0);
+    if(crews.length===0){toast('Set at least one crew count');return;}
+    const total=crews.reduce((a,[_,n])=>a+n,0);
+    events.push({
+      title:`Attendance — ${total} on site`,
+      note:crews.map(([t,n])=>`${t}: ${n}`).join(' · '),
+      loc:'', who:'', time:nowStr(), today:true, photos:0, flag:false, kindColor:'event'
+    });
+    closeSheet();toast('Attendance logged — ready to send to Stack');go('home');return;
+  }
+
+  const p=CAP_PRESETS[sheetMode];
+  let title = sheetMode==='deficiency'?'Deficiency logged'
+            : sheetMode==='delay'?`Delay — ${capture.severity||'logged'}`
+            : (capture.who? `With ${capture.who}` : 'Site note');
+  if(capture.loc && sheetMode==='capture' && capture.who){
+    title=`${capture.who} · ${capture.loc.split('·').pop().trim()}`;
+  }
+  const newEv={
+    title, note:capture.note||'', loc:capture.loc, who:capture.who,
+    time:nowStr(), today:true, photos:capture.photos||0,
+    flag:capture.flag, flagType:capture.flagType,
+    kindColor:p.color, severity:capture.severity
+  };
+  events.push(newEv);
+  // Post-save step: offer to draft an email right now, while it's fresh
+  showPostSave(newEv);
+}
+
+function showPostSave(ev){
+  document.getElementById('sheet-title').textContent='Saved to log';
+  document.getElementById('sheet-auto').innerHTML=`${ev.loc||'Logged'} · ${ev.time}`;
+  document.getElementById('sheet-body').innerHTML=`
+    <div style="text-align:center;padding:6px 0 4px">
+      <div style="font-size:44px;color:var(--done)">✓</div>
+      <div style="font-size:16px;font-weight:650;margin-top:6px">Captured${ev.flag?' & flagged':''}</div>
+      <div style="font-size:13px;color:var(--ink-dim);margin-top:6px;line-height:1.5">
+        It's in today's log${ev.flag?` and flagged for <b style="color:var(--hivis)">${ev.flagType}</b>`:''}.<br>Want to draft the email now while it's fresh?
+      </div>
+    </div>
+    <div class="postsave">
+      <button onclick="closeSheet();go('home')">Done</button>
+      <button class="mail" onclick="openEmailDraft(window.__lastEv)">✉ Email this</button>
+    </div>`;
+  window.__lastEv=ev;
+  document.getElementById('save-btn').parentElement.style.display='none';
+  // keep sheet open
+}
+
+/* ===================== EMAIL DRAFT ===================== */
+// Build a draft from any logged event. Subject = project · unit · trade.
+function buildDraft(ev){
+  const PROJECT="401DS";
+  // pull a clean unit label out of the location if present
+  let unitPart="";
+  if(ev.loc){
+    // loc looks like "6e · Unité 614" or "6e · Bike Room (104)"
+    const tail=ev.loc.split('·').pop().trim();
+    unitPart=tail;
+  }
+  const tradePart = ev.who || (ev.title.includes('Électr')?'Électricien':'');
+  const subjBits=[PROJECT, unitPart, tradePart].filter(Boolean);
+  const subject=subjBits.join(' · ');
+  const bodyLines=[];
+  if(ev.note) bodyLines.push(ev.note);
+  bodyLines.push('');
+  bodyLines.push(`— logged ${today()} at ${ev.time}`);
+  if(ev.loc) bodyLines.push(`Location: ${ev.loc}`);
+  return {subject, body:bodyLines.join('\n'), photos:ev.photos||0, ev};
+}
+
+function openEmailDraft(ev){
+  const d=buildDraft(ev);
+  sheetMode='email';
+  document.getElementById('sheet-title').textContent='Email draft';
+  document.getElementById('sheet-auto').innerHTML='Review, then open in your mail app to finish & send';
+  document.getElementById('sheet-body').innerHTML=`
+    <div class="email-draft">
+      <div class="email-line"><span class="k">To</span><span class="v" style="color:var(--ink-faint)">— you'll pick the trade foreman</span></div>
+      <div class="email-line"><span class="k">Subject</span><span class="v subj">${d.subject}</span></div>
+      <div class="email-line body"><span class="k">Message</span><span class="v">${d.body||'(no note added)'}</span></div>
+      ${d.photos?`<div class="email-att">${Array.from({length:d.photos}).map((_,i)=>`<div class="pa">📷</div>`).join('')}<span style="align-self:center;font-size:12px;color:var(--ink-dim)">${d.photos} photo${d.photos>1?'s':''} attached</span></div>`:''}
+    </div>
+    <div class="email-note">In the real app this opens your mail composer with everything filled in, ready to send.<br>Here it's a preview of the draft that gets created.</div>
+    <div class="email-actions">
+      <button class="ghost" onclick="closeSheet()">Close</button>
+      <button class="primary" onclick="openMailComposer('${encodeURIComponent(d.subject)}','${encodeURIComponent(d.body)}')">Open in mail</button>
+    </div>`;
+  document.getElementById('save-btn').parentElement.style.display='none';
+  showSheet();
+}
+
+function openMailComposer(subj,body){
+  // on a real device this launches the mail app; harmless in preview
+  const link=`mailto:?subject=${subj}&body=${body}`;
+  try{ window.location.href=link; }catch(e){}
+  closeSheet();
+  toast('Draft ready in your mail app');
+}
+
+/* ---- sheet plumbing ---- */
+function showSheet(){
+  // email mode hides the footer save button; everything else shows it
+  document.getElementById('save-btn').parentElement.style.display = (sheetMode==='email')?'none':'';
+  document.getElementById('scrim').classList.add('show');
+  document.getElementById('sheet').classList.add('show');
+}
+function closeSheet(){document.getElementById('scrim').classList.remove('show');document.getElementById('sheet').classList.remove('show');}
+function toast(msg){
+  const t=document.getElementById('toast');t.innerHTML='✓ '+msg;t.classList.add('show');
+  clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2600);
+}
+
+// greeting by time of day
+(function(){
+  const h=new Date().getHours();
+  const g = h<11?"Morning walkthrough?":h<15?"What's happening on site?":"End-of-day round?";
+  document.getElementById('greeting').textContent=g;
+})();
+
+seed();
+renderHome();
+</script>
+</body>
+</html>
