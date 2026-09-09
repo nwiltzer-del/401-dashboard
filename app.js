@@ -7,12 +7,12 @@
 
 // ---- Real 401 structure, from the plans + master checklist ----
 const STAGES = [
-  "Cadres/Portes/Plinthes","Peinture Apprêt","Céramique","Coulis","Planchers",
-  "Cabinets & Vanités","Comptoirs","Fin. Plomberie","Fin. Élec.","Calfeutrage",
-  "Escaliers","Quincaillerie int.","Nettoyage","Peinture Finale","Finition MEP",
-  "Corrections & Électro","Nettoyage 2","Stores","Quinc. Balcon/Fen","Seuille Gran.",
-  "ID quinc. Porte","Trim strip LED","Éclairage vérif.","Dropsill",
-  "Plaf./Trap d'accès","Balcon Garde-corps","Séparateur balcon","Prise Balcon"
+  "Frames/Doors/Baseboards","Primer paint","Tile","Grout","Flooring",
+  "Cabinets & Vanities","Countertops","Plumbing finish","Electrical finish","Caulking",
+  "Stairs","Interior hardware","Cleaning","Final paint","MEP finish",
+  "Corrections & electrical fixtures","Cleaning (2nd pass)","Blinds","Balcony/window hardware","Seuille Gran.",
+  "ID quinc. Porte","LED trim strip","Lighting check","Dropsill",
+  "Ceiling/Access hatch","Balcony guardrail","Balcony divider","Balcony outlet"
 ];
 
 // unit types + areas pulled from the architectural sheets

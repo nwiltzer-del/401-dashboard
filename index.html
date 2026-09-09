@@ -24,13 +24,22 @@
     <div class="home-scroll">
       <div class="prompt" id="greeting">What's happening on site?</div>
 
-      <button class="capture-btn" onclick="openCapture()">
-        <span class="plus">+</span>
-        <span>
-          <span class="lbl">Quick capture</span>
-          <span class="sub">Walkthrough, a trade pulls you aside, anything to log</span>
-        </span>
-      </button>
+      <div class="cap-row">
+        <button class="capture-btn compact" onclick="openCapture()">
+          <span class="plus">+</span>
+          <span>
+            <span class="lbl">Quick capture</span>
+            <span class="sub">Log anything</span>
+          </span>
+        </button>
+        <button class="capture-btn compact" onclick="go('flags')">
+          <span class="plus">⚑</span>
+          <span>
+            <span class="lbl">Flags</span>
+            <span class="sub"><b id="tile-flags">—</b> to follow up</span>
+          </span>
+        </button>
+      </div>
 
       <div class="tiles">
         <button class="tile" onclick="go('progress')">
@@ -43,20 +52,15 @@
           <span class="tl">Deficiencies</span>
           <span class="meta"><b id="tile-defic">—</b> open</span>
         </button>
-        <button class="tile" onclick="go('flags')">
-          <span class="ico">⚑</span>
-          <span class="tl">Flags</span>
-          <span class="meta"><b id="tile-flags">—</b> to follow up</span>
+        <button class="tile" onclick="openCapture('delay')">
+          <span class="ico">◷</span>
+          <span class="tl">Log a delay</span>
+          <span class="meta">Absorbed · Contained · Propagating</span>
         </button>
         <button class="tile" onclick="openCapture('attendance')">
           <span class="ico">☰</span>
           <span class="tl">Attendance</span>
           <span class="meta">Log today's crews</span>
-        </button>
-        <button class="tile wide" onclick="openCapture('delay')">
-          <span class="ico">◷</span>
-          <span class="tl">Log a delay</span>
-          <span class="meta">absorbed · contained · propagating</span>
         </button>
       </div>
 

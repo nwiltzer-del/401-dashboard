@@ -82,6 +82,13 @@ body{
 .capture-btn .lbl{display:block;font-size:18px;font-weight:750;letter-spacing:-.3px;}
 .capture-btn .sub{display:block;font-size:13px;font-weight:500;opacity:.72;margin-top:2px;}
 
+.cap-row{display:flex;gap:10px;}
+.cap-row .capture-btn{width:auto;flex:1;min-width:0;}
+.capture-btn.compact{padding:14px;gap:10px;}
+.capture-btn.compact .plus{width:34px;height:34px;font-size:19px;border-radius:9px;}
+.capture-btn.compact .lbl{font-size:15px;white-space:nowrap;}
+.capture-btn.compact .sub{font-size:11px;margin-top:1px;white-space:nowrap;}
+
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;}
 .tile{
   background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
