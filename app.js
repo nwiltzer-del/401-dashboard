@@ -118,7 +118,7 @@ function renderHome(){
       defic+=arr.filter(s=>s==='defic').length;
     }
   }
-  events.forEach(e=>{if(e.flag) flags++;});
+  events.forEach(e=>{if(e.flag && !e.resolved) flags++;});
   document.getElementById('tile-done').textContent=doneUnits;
   document.getElementById('tile-defic').textContent=defic;
   document.getElementById('tile-flags').textContent=flags;
@@ -223,12 +223,47 @@ function fillStages(card,f,r){
 }
 
 // ---- FLAGS render ----
+function fullStamp(ts){
+  if(!ts) return '';
+  const d=new Date(ts);
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' · '+d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+}
+function flagNode(e){
+  const n=document.createElement('div');
+  n.className='event'+(e.resolved?' resolved':'');
+  n.innerHTML=`
+    <button class="flagdot ${e.resolved?'resolved':''}" title="${e.resolved?'Mark not addressed':'Mark addressed'}">${e.resolved?'✓':'⚑'}</button>
+    <div class="body">
+      <div class="line1">${e.title}</div>
+      ${e.note?`<div class="line2">${e.note}</div>`:''}
+      <div class="tags">
+        ${e.loc?`<span class="chip loc">📍 ${e.loc}</span>`:''}
+        <span class="chip flag${e.resolved?' resolved':''}">${e.resolved?'✓ Addressed':'⚑ '+(e.flagType||'Flagged')}</span>
+      </div>
+      ${e.ts?`<div class="time">${fullStamp(e.ts)}</div>`:''}
+    </div>
+    <button class="mailbtn" title="Email this">✉</button>`;
+  n.querySelector('.flagdot').onclick=(ev)=>{ev.stopPropagation(); e.resolved=!e.resolved; renderFlags(); renderHome();};
+  n.querySelector('.mailbtn').onclick=(ev)=>{ev.stopPropagation();openEmailDraft(e);};
+  return n;
+}
 function renderFlags(){
   const ff=document.getElementById('flag-feed');
-  [...ff.querySelectorAll('.event')].forEach(n=>n.remove());
+  [...ff.querySelectorAll('.event, .flags-divider')].forEach(n=>n.remove());
   const flagged=events.filter(e=>e.flag);
   document.getElementById('flag-empty').style.display= flagged.length?'none':'';
-  flagged.slice().reverse().forEach(e=> ff.appendChild(eventNode(e)));
+  const byOldest=(a,b)=>(a.ts||0)-(b.ts||0);
+  const open=flagged.filter(e=>!e.resolved).sort(byOldest);
+  const done=flagged.filter(e=>e.resolved).sort(byOldest);
+  open.forEach(e=> ff.appendChild(flagNode(e)));
+  if(done.length){
+    const hdr=document.createElement('div');
+    hdr.className='section-label flags-divider';
+    hdr.style.margin='18px 4px 8px';
+    hdr.textContent='Addressed';
+    ff.appendChild(hdr);
+    done.forEach(e=> ff.appendChild(flagNode(e)));
+  }
 }
 
 // ---- DEFICIENCIES render (every open deficiency across the whole grid,
@@ -282,17 +317,19 @@ const CAP_PRESETS={
   capture:   {title:"Quick capture", color:'event'},
   deficiency:{title:"Log a deficiency", color:'defic'},
   attendance:{title:"Attendance", color:'event'},
-  delay:     {title:"Log a delay", color:'prog'}
+  delay:     {title:"Log a delay", color:'prog'},
+  flag:      {title:"New flag", color:'event'}
 };
 
 function openCapture(mode='capture'){
   sheetMode=mode; stageCtx=null;
   capture={loc:'',who:'',note:'',photos:0,flag:false,flagType:'Next meeting',status:null,severity:null,trades:{}};
+  if(mode==='flag'){ capture.flag=true; capture.flagType='Follow up'; }
   const p=CAP_PRESETS[mode];
   document.getElementById('sheet-title').textContent=p.title;
   document.getElementById('sheet-auto').innerHTML=`⏱ auto-stamped <b>${today()} · ${nowStr()}</b>`;
   document.getElementById('sheet-body').innerHTML=buildCaptureBody(mode);
-  document.getElementById('save-btn').textContent = mode==='attendance'?'Save attendance':'Save to log';
+  document.getElementById('save-btn').textContent = mode==='attendance'?'Save attendance':mode==='flag'?'Save flag':'Save to log';
   wireCaptureBody(mode);
   showSheet();
 }
@@ -321,6 +358,26 @@ function buildCaptureBody(mode){
   if(mode==='attendance'){
     return `<div class="field"><label>Crews on site today — tap to set headcount</label>
       <div id="att-list"></div></div>`;
+  }
+  if(mode==='flag'){
+    return `<div class="field"><label>What's the flag</label>
+      <textarea id="cap-note" placeholder="e.g. Call cleaners back to unit 424"></textarea></div>
+      <div class="field"><label>Where (optional)</label>
+        <select class="opt-select" id="cap-loc">
+          <option value="">Select unit or area…</option>
+          ${allLocations().map(l=>`<option>${l}</option>`).join('')}
+        </select></div>
+      <div class="field"><label>Type</label>
+        <div class="opt-row" id="cap-flagtype">
+          <button class="opt on" data-ft="Follow up">Follow up</button>
+          <button class="opt" data-ft="Next meeting">Next meeting</button>
+          <button class="opt" data-ft="Waiting on architect">Waiting on architect</button>
+          <button class="opt" data-ft="Back-charge">Back-charge</button>
+        </div></div>
+      <div class="field"><label>Photos</label>
+        <div class="photo-row" id="cap-photos">
+          <div class="add-photo" onclick="addPhoto()">＋</div>
+        </div></div>`;
   }
   let html='';
   // location
@@ -478,8 +535,8 @@ function saveEvent(){
     const statusWord={done:'marked complete',prog:'in progress',none:'reset',defic:'DEFICIENCY'}[capture.status];
     events.push({
       title:`${label} · ${STAGES[si]} — ${statusWord}`,
-      note:capture.note||'', loc:`${f} · ${label}`, who:'', time:nowStr(), today:true,
-      photos:capture.photos||0, flag:capture.flag, flagType:capture.flagType,
+      note:capture.note||'', loc:`${f} · ${label}`, who:'', time:nowStr(), ts:Date.now(), today:true,
+      photos:capture.photos||0, flag:capture.flag, flagType:capture.flagType, resolved:false,
       kindColor:capture.status
     });
     closeSheet();
@@ -516,9 +573,22 @@ function saveEvent(){
     events.push({
       title:`Attendance — ${total} on site`,
       note:crews.map(([t,n])=>`${t}: ${n}`).join(' · '),
-      loc:'', who:'', time:nowStr(), today:true, photos:0, flag:false, kindColor:'event'
+      loc:'', who:'', time:nowStr(), ts:Date.now(), today:true, photos:0, flag:false, kindColor:'event'
     });
     closeSheet();toast('Attendance logged — ready to send to Stack');go('home');return;
+  }
+
+  if(sheetMode==='flag'){
+    if(!capture.note || !capture.note.trim()){ toast('Add a note for this flag'); return; }
+    const newEv={
+      title:capture.note.trim(), note:'', loc:capture.loc, who:'',
+      time:nowStr(), ts:Date.now(), today:true, photos:capture.photos||0,
+      flag:true, flagType:capture.flagType, resolved:false,
+      kindColor:'event'
+    };
+    events.push(newEv);
+    showPostSave(newEv);
+    return;
   }
 
   const p=CAP_PRESETS[sheetMode];
@@ -530,8 +600,8 @@ function saveEvent(){
   }
   const newEv={
     title, note:capture.note||'', loc:capture.loc, who:capture.who,
-    time:nowStr(), today:true, photos:capture.photos||0,
-    flag:capture.flag, flagType:capture.flagType,
+    time:nowStr(), ts:Date.now(), today:true, photos:capture.photos||0,
+    flag:capture.flag, flagType:capture.flagType, resolved:false,
     kindColor:p.color, severity:capture.severity
   };
   events.push(newEv);
