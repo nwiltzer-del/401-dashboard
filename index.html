@@ -38,7 +38,7 @@
           <span class="tl">Progress</span>
           <span class="meta"><b id="tile-done">—</b> units complete</span>
         </button>
-        <button class="tile" onclick="openCapture('deficiency')">
+        <button class="tile" onclick="go('deficiencies')">
           <span class="ico">▲</span>
           <span class="tl">Deficiencies</span>
           <span class="meta"><b id="tile-defic">—</b> open</span>
@@ -83,6 +83,22 @@
       </div>
     </div>
     <div class="grid-scroll" id="grid-scroll"></div>
+  </section>
+
+  <!-- ============ DEFICIENCIES ============ -->
+  <section class="view" id="view-deficiencies">
+    <div class="home-scroll">
+      <div class="prompt">Deficiencies <span>· open across the project</span></div>
+      <button class="capture-btn" style="padding:14px" onclick="openCapture('deficiency')">
+        <span class="plus" style="width:34px;height:34px;font-size:22px;">+</span>
+        <span><span class="lbl" style="font-size:15px;">Log a new deficiency</span></span>
+      </button>
+    </div>
+    <div class="feed" id="defic-feed">
+      <div class="empty-feed" id="defic-empty">
+        No open deficiencies. Nice.
+      </div>
+    </div>
   </section>
 
   <!-- ============ FLAGS ============ -->

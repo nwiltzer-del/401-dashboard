@@ -94,6 +94,7 @@ function go(v){
   const nb=document.getElementById('nav-'+v); if(nb) nb.classList.add('on');
   if(v==='progress') renderGrid();
   if(v==='flags') renderFlags();
+  if(v==='deficiencies') renderDeficiencies();
   if(v==='home') renderHome();
   // back button shows on every screen except home
   document.getElementById('backbtn').classList.toggle('show', v!=='home');
@@ -148,7 +149,7 @@ function eventNode(e){
         ${e.who?`<span class="chip">${e.who}</span>`:''}
         ${e.flag?`<span class="chip flag">⚑ ${e.flagType||'Flagged'}</span>`:''}
       </div>
-      <div class="time">${e.time}</div>
+      ${e.time?`<div class="time">${e.time}</div>`:''}
     </div>
     <button class="mailbtn" title="Email this">✉</button>`;
   n.querySelector('.mailbtn').onclick=(ev)=>{ev.stopPropagation();openEmailDraft(e);};
@@ -228,6 +229,42 @@ function renderFlags(){
   const flagged=events.filter(e=>e.flag);
   document.getElementById('flag-empty').style.display= flagged.length?'none':'';
   flagged.slice().reverse().forEach(e=> ff.appendChild(eventNode(e)));
+}
+
+// ---- DEFICIENCIES render (every open deficiency across the whole grid,
+// not just today's log — a deficiency logged last week is still open) ----
+function collectDeficiencies(){
+  const out=[];
+  for(const f in state){
+    const fdata=FLOORS[f];
+    const rows=[
+      ...fdata.units.map(u=>({id:u[0],type:u[1],common:false})),
+      ...fdata.common.map(c=>({id:c,type:'Common area',common:true}))
+    ];
+    rows.forEach(r=>{
+      const arr=state[f][r.id];
+      if(!arr) return;
+      arr.forEach((val,si)=>{
+        if(val!=='defic') return;
+        const note=stageNotes[`${f}/${r.id}/${si}`]||{};
+        const label=r.common?r.id:('Unité '+r.id);
+        out.push({
+          title:`${label} · ${STAGES[si]}`,
+          note:note.text||'', loc:`${f} · ${label}`, who:'', time:'',
+          photos:note.photos||0, flag:note.flag||false, flagType:note.flagType,
+          kindColor:'defic'
+        });
+      });
+    });
+  }
+  return out;
+}
+function renderDeficiencies(){
+  const df=document.getElementById('defic-feed');
+  [...df.querySelectorAll('.event')].forEach(n=>n.remove());
+  const list=collectDeficiencies();
+  document.getElementById('defic-empty').style.display= list.length?'none':'';
+  list.forEach(e=> df.appendChild(eventNode(e)));
 }
 
 /* ===================== SHEET / CAPTURE ===================== */
@@ -529,7 +566,7 @@ function buildDraft(ev){
   const bodyLines=[];
   if(ev.note) bodyLines.push(ev.note);
   bodyLines.push('');
-  bodyLines.push(`— logged ${today()} at ${ev.time}`);
+  bodyLines.push(ev.time?`— logged ${today()} at ${ev.time}`:`— logged ${today()}`);
   if(ev.loc) bodyLines.push(`Location: ${ev.loc}`);
   return {subject, body:bodyLines.join('\n'), photos:ev.photos||0, ev};
 }
