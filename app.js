@@ -305,7 +305,17 @@ function allLocations(){
   }
   return out;
 }
-const TRADES=["Peintre","Électricien","Plombier","Gicleurs (sprinkler)","CVAC (HVAC)","Céramiste","Ébéniste","Planchers","Général"];
+const TRADES=[
+  // finishing — most frequent day-to-day taps
+  "Painter","Electrician (finish)","Plumber (finish)","Ceramic/Tile","Countertops & Backsplash",
+  "Cabinetry/Millwork","Flooring","Wood stairs","Trim/Doors/Hardware","Railings/Guardrails",
+  "Blinds/Window coverings","General labour","Cleaning",
+  // rough-in — still active, less frequent
+  "Sprinklers/Fire protection","HVAC/Ventilation","Low voltage/Data","Drywall install","Drywall taping","Insulation",
+  // structure & envelope — rare now, kept for delays/earlier-phase logging
+  "Demolition","Excavation","Concrete","Structural steel/Framing","Metal-stud framing",
+  "Masonry","Waterproofing/Membrane","Roofing","Exterior windows","Metal cladding","Landscaping"
+];
 
 function buildCaptureBody(mode){
   if(mode==='attendance'){
