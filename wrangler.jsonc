@@ -1,0 +1,10 @@
+{
+  "name": "401-dashboard",
+  "compatibility_date": "2026-09-09",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "."
+  }
+}
