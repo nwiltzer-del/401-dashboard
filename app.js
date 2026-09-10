@@ -10,8 +10,8 @@ const STAGES = [
   "Frames/Doors/Baseboards","Primer paint","Tile","Grout","Flooring",
   "Cabinets & Vanities","Countertops","Plumbing finish","Electrical finish","Caulking",
   "Stairs","Interior hardware","Cleaning","Final paint","MEP finish",
-  "Corrections & electrical fixtures","Cleaning (2nd pass)","Blinds","Balcony/window hardware","Seuille Gran.",
-  "ID quinc. Porte","LED trim strip","Lighting check","Dropsill",
+  "Corrections & electrical fixtures","Cleaning (2nd pass)","Blinds","Balcony/window hardware","Granite door sill",
+  "Electric Deadbolt","LED trim strip","Lighting check","Dropsill",
   "Ceiling/Access hatch","Balcony guardrail","Balcony divider","Balcony outlet"
 ];
 
